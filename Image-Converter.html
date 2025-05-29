@@ -4,7 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image Converter Tool</title>
+  <title>Image Background Remover & Optimizer - Free Online Tool</title>
+  <meta name="description" content="Free online tool to remove backgrounds from images and optimize them by adjusting compression. Supports PNG, JPG, WebP formats.">
+  <meta name="keywords" content="remove background, image optimizer, image compressor, background remover, png background, jpg optimizer, webp optimizer, free tool, online tool">
+  <!-- Google AdSense Script - Replace with your script
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID"
+       crossorigin="anonymous"></script>
+  -->
   <style>
     body {
       background-color: #ffffff;
@@ -66,32 +72,145 @@
 </head>
 <body>
   <div class="container">
-    <h1>Image Converter Tool</h1>
+    <!-- AdSense Ad Unit - Top of Page - Replace with your ad code -->
+    <div style="margin-bottom: 15px; text-align: center;">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+           data-ad-slot="YOUR_AD_SLOT_ID"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+           (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+      <small>Advertisement</small>
+    </div>
+    <!-- End AdSense Ad Unit -->
+    <h1>Image Background Remover & Optimizer</h1>
     <input type="file" id="imageInput" accept="image/*" />
+    <div>
+      <label for="removeBgApiKey">Remove.bg API Key:</label>
+      <input type="text" id="removeBgApiKey" placeholder="Enter your Remove.bg API Key">
+      <small>Get your API key from <a href="https://www.remove.bg/api" target="_blank">remove.bg</a>. The key is processed in your browser.</small>
+    </div>
+    <button onclick="removeBackground()">Remove Background</button>
     <select id="formatSelect">
       <option value="png">PNG</option>
       <option value="jpeg">JPG</option>
       <option value="gif">GIF</option>
       <option value="webp">WebP</option>
     </select>
+    <div>
+      <label for="compressionQuality">Compression Quality (for JPG/WebP):</label>
+      <input type="range" id="compressionQuality" min="0.1" max="1.0" value="0.9" step="0.05">
+      <span id="qualityValue">0.9</span> 
+      <small>Lower values mean smaller file size but lower quality.</small>
+    </div>
     <button onclick="convertImage()">Convert Image</button>
 
-    <div id="previewContainer"></div>
+    <div id="previewContainer">
+      <div id="originalPreviewArea" style="margin-bottom: 1rem;">
+        <!-- Populated by imageInput change event -->
+      </div>
+      <div id="bgRemovedPreviewArea" style="margin-bottom: 1rem;">
+        <!-- Populated by removeBackground() -->
+      </div>
+      <div id="finalPreviewArea">
+        <!-- Populated by convertImage() -->
+      </div>
+    </div>
+    <!-- AdSense Ad Unit - Bottom of Page - Replace with your ad code -->
+    <div style="margin-top: 15px; text-align: center;">
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+           data-ad-slot="YOUR_AD_SLOT_ID"
+           data-ad-format="auto"
+           data-full-width-responsive="true"></ins>
+      <script>
+           (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+      <small>Advertisement</small>
+    </div>
+    <!-- End AdSense Ad Unit -->
   </div>
 
   <script>
     let originalFile;
+    let currentImageBlob = null; // To store the image blob after background removal or original if not removed
 
     document.getElementById('imageInput').addEventListener('change', function(e) {
       originalFile = e.target.files[0];
-      const previewContainer = document.getElementById('previewContainer');
-      previewContainer.innerHTML = '<p>Original Preview:</p>' + '<img src="' + URL.createObjectURL(originalFile) + '" alt="Original Image">';
+      currentImageBlob = originalFile; // Initially, current image is the original one
+      
+      const originalPreviewArea = document.getElementById('originalPreviewArea');
+      originalPreviewArea.innerHTML = '<p>Original Preview:</p>' + 
+                                      '<img src="' + URL.createObjectURL(originalFile) + '" alt="Original Image" id="originalPreviewImage">' +
+                                      '<br><a class="download-btn" href="' + URL.createObjectURL(originalFile) + '" download="' + originalFile.name + '">Download Original Image</a>';
+      
+      // Clear subsequent preview areas when a new file is uploaded
+      document.getElementById('bgRemovedPreviewArea').innerHTML = '';
+      document.getElementById('finalPreviewArea').innerHTML = '';
     });
 
+    async function removeBackground() {
+      if (!originalFile) {
+        alert("Please upload an image first.");
+        return;
+      }
+      const apiKey = document.getElementById('removeBgApiKey').value;
+      if (!apiKey) {
+        alert("Please enter your Remove.bg API Key.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image_file', originalFile);
+      formData.append('size', 'auto');
+
+      const bgRemovedPreviewArea = document.getElementById('bgRemovedPreviewArea');
+      const finalPreviewArea = document.getElementById('finalPreviewArea');
+      bgRemovedPreviewArea.innerHTML = '<p>Processing background removal...</p>'; // Provide feedback
+      finalPreviewArea.innerHTML = ''; // Clear final preview if we are re-processing background
+
+      try {
+        const response = await fetch('https://api.remove.bg/v1.0/removebg', {
+          method: 'POST',
+          headers: {
+            'X-Api-Key': apiKey,
+          },
+          body: formData,
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          currentImageBlob = blob; // Update currentImageBlob with the processed image
+          const processedImageUrl = URL.createObjectURL(blob);
+          
+          bgRemovedPreviewArea.innerHTML = '<p>Background Removed Preview:</p>' +
+                                           '<img src="' + processedImageUrl + '" alt="Background Removed Image" id="backgroundRemovedImage">' +
+                                           '<a class="download-btn" href="' + processedImageUrl + '" download="background-removed-image.png">Download Background Removed Image</a>';
+
+        } else {
+          const errorData = await response.json();
+          bgRemovedPreviewArea.innerHTML = '<p style="color: red;">Error removing background: ' + (errorData.errors ? errorData.errors[0].title : 'Unknown error') + '</p>';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        bgRemovedPreviewArea.innerHTML = '<p style="color: red;">Failed to remove background. Check console for details.</p>';
+      }
+    }
+
     function convertImage() {
-      if (!originalFile) return alert("Please upload an image first.");
+      const imageToConvert = currentImageBlob || originalFile; // Use processed image if available
+
+      if (!imageToConvert) {
+        alert("Please upload an image first.");
+        return;
+      }
 
       const format = document.getElementById("formatSelect").value;
+      const quality = parseFloat(document.getElementById('compressionQuality').value);
       const reader = new FileReader();
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
@@ -103,18 +222,40 @@
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
 
-          canvas.toBlob(function(blob) {
-            const convertedUrl = URL.createObjectURL(blob);
-            const previewContainer = document.getElementById("previewContainer");
-            previewContainer.innerHTML += '<p>Converted Preview:</p>' +
-              '<img src="' + convertedUrl + '" alt="Converted Image">' +
-              '<a class="download-btn" href="' + convertedUrl + '" download="converted-image.' + format + '">Download Converted Image</a>';
-          }, 'image/' + format);
+          canvas.toBlob(function(outputBlob) { 
+            currentImageBlob = outputBlob; // Update currentImageBlob with the converted/compressed image
+            const convertedUrl = URL.createObjectURL(outputBlob);
+            const finalPreviewArea = document.getElementById("finalPreviewArea");
+            let previewLabel = '<p>Final Converted Preview:</p>';
+            if (format === 'jpeg' || format === 'webp') {
+              previewLabel = '<p>Final Converted/Optimized Preview (Quality: ' + quality + '):</p>';
+            }
+            finalPreviewArea.innerHTML = previewLabel +
+                                         '<img src="' + convertedUrl + '" alt="Converted/Optimized Image" id="finalPreviewImage">' +
+                                         '<a class="download-btn" href="' + convertedUrl + '" download="converted-image-' + ( (format === 'jpeg' || format === 'webp') ? quality + '.' : '' ) + format + '">Download Final Image</a>';
+          }, 'image/' + format, quality); // Pass quality to toBlob
         };
-        img.src = event.target.result;
+        // If imageToConvert is a Blob (e.g. from removeBackground), create an Object URL for img.src
+        // Otherwise, it's a File object from input, which FileReader handles directly with event.target.result
+        if (imageToConvert instanceof Blob) {
+            img.src = URL.createObjectURL(imageToConvert);
+        } else { 
+            img.src = event.target.result; // Should be originalFile if imageToConvert is not a Blob
+        }
       };
 
-      reader.readAsDataURL(originalFile);
+      // FileReader expects a Blob or File. Both originalFile and currentImageBlob (if set) are fine.
+      reader.readAsDataURL(imageToConvert);
+    }
+
+    const qualitySlider = document.getElementById('compressionQuality');
+    const qualityValueDisplay = document.getElementById('qualityValue');
+    if (qualitySlider && qualityValueDisplay) { 
+        qualitySlider.addEventListener('input', function() {
+            qualityValueDisplay.textContent = this.value;
+        });
+    } else {
+        console.error("Compression quality slider or display element not found.");
     }
   </script>
 </body>
